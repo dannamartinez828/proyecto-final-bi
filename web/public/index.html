@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Datos de sensores</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    form { display: flex; gap: 1rem; flex-wrap: wrap; align-items: end; margin-bottom: 1rem; }
+    label { display: flex; flex-direction: column; font-size: 0.85rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 4px 8px; text-align: left; }
+    th { background: #f0f0f0; }
+  </style>
+</head>
+<body>
+  <h2>Datos de sensores</h2>
+  <form id="f">
+    <label>Fecha inicio <input type="date" name="fecha_inicio"></label>
+    <label>Fecha fin <input type="date" name="fecha_fin"></label>
+    <label>Block name <select name="block_name"><option value="">Todos</option></select></label>
+    <label>Data type <select name="data_type"><option value="">Todos</option></select></label>
+    <button>Filtrar</button>
+  </form>
+  <p id="info"></p>
+  <table>
+    <thead><tr><th>ID</th><th>Sensor</th><th>Tipo</th><th>Valor</th><th>Fecha</th><th>Bloque</th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <script>
+    const f = document.getElementById("f");
+
+    async function cargarOpciones() {
+      const o = await (await fetch("/api/opciones")).json();
+      o.bloques.forEach(b => f.block_name.add(new Option(b, b)));
+      o.tipos.forEach(t => f.data_type.add(new Option(t, t)));
+    }
+
+    async function buscar() {
+      const qs = new URLSearchParams(new FormData(f)).toString();
+      const rows = await (await fetch("/api/datos?" + qs)).json();
+      document.getElementById("info").textContent = `${rows.length} registros (máx. 1000)`;
+      document.getElementById("tbody").innerHTML = rows.map(r =>
+        `<tr><td>${r.id_data}</td><td>${r.id_sensor}</td><td>${r.data_type}</td><td>${r.data_value}</td>` +
+        `<td>${r.data_date.replace("T", " ").slice(0, 19)}</td><td>${r.block_name}</td></tr>`).join("");
+    }
+
+    f.addEventListener("submit", e => { e.preventDefault(); buscar(); });
+    cargarOpciones().then(buscar);
+  </script>
+</body>
+</html>
